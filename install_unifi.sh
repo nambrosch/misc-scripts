@@ -83,8 +83,8 @@ After=network.target
 Type=simple
 User=unifi
 WorkingDirectory=$unifi_base/$unifi_ver
-ExecStart=/usr/bin/java -Xmx512M -server -jar /opt/unifi/5.6.18-8261dc5066/lib/ace.jar start
-ExecStop=/usr/bin/java -jar /opt/unifi/5.6.18-8261dc5066/lib/ace.jar stop
+ExecStart=/usr/bin/java -Xmx512M -server -jar $unifi_base/$unifi_ver/lib/ace.jar start
+ExecStop=/usr/bin/java -jar $unifi_base/$unifi_ver/lib/ace.jar stop
 SuccessExitStatus=143
 
 [Install]
