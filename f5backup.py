@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+# https://support.f5.com/csp/article/K8465
+# to read encrypted ucs files run gpg <filename.ucs>
+
+# https://devcentral.f5.com/wiki/iControl.System__ConfigSync.ashx
+# icontrol system.configsync used to read config
+
 import argparse
 import base64
 import bigsuds
@@ -12,11 +18,12 @@ import time
 
 # parse command-line input
 parser = argparse.ArgumentParser()
-parser.add_argument('hostname', help='hostname of f5 bigip')
-parser.add_argument('-a', help='type archive', default='text', choices=('text','ucs'), required=False)
-parser.add_argument('-b', help='base log directory', default=os.path.dirname(os.path.realpath(sys.argv[0])), required=False)
-parser.add_argument('-p', help='password', required=False)
-parser.add_argument('-u', help='username', required=False)
+parser.add_argument('hostname', help='hostname of bigip')
+parser.add_argument('-a', help='archive type', default='text', choices=('text','ucs'), required=False)
+parser.add_argument('-b', help='base directory', default=os.path.dirname(os.path.realpath(sys.argv[0])), required=False)
+parser.add_argument('-p', help='bigip password', required=False)
+parser.add_argument('-s', help='ucs secret', default='Secret!', required=False)
+parser.add_argument('-u', help='bigip username', required=False)
 args = parser.parse_args()
 
 # make sure the specified hostnamae resolves (even if it's an ip)
@@ -65,14 +72,19 @@ else:
             os.makedirs(ucsdir)
 
         # tell bigip to create a ucs archive
-        print 'creating ucs archive...'
         filename = 'config_' + cid + '_' + time.strftime('%Y%m%d_%H%M%S') + '.ucs'
         filepath = ucsdir + '/' + filename
-        b.System.ConfigSync.save_configuration(filename,'SAVE_FULL')
+
+        if args.a == 'ucs':
+            print 'creating encrypted ucs archive...'
+            b.System.ConfigSync.save_encrypted_configuration(filename,args.s)
+        else:
+            print 'creating ucs archive...'
+            b.System.ConfigSync.save_configuration(filename,'SAVE_FULL')
 
         # download the ucs archive we just created
         print 'downloading ucs archive...'
-        f = open( filepath,'wb')
+        f = open(filepath,'wb')
 
         chunk_size = 65536
         file_offset = 0
@@ -107,7 +119,7 @@ else:
 
             # move the easy objects first
             os.system('mv -f ' + ucstmp + '/BigDB.dat ' + ucsdir + '/')
-            os.system('mv -f ' + ucstmp + '/bigip.conf ' + ucsdir + '/' )
+            os.system('mv -f ' + ucstmp + '/bigip.conf ' + ucsdir + '/')
             os.system('mv -f ' + ucstmp + '/bigip_base.conf ' + ucsdir + '/')
             os.system('mv -f ' + ucstmp + '/bigip.license ' + ucsdir + '/')
             os.system('mv -f ' + ucstmp + '/bigip_user.conf ' + ucsdir + '/')
